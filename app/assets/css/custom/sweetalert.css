@@ -1,0 +1,147 @@
+/* 
+ * Custom SweetAlert2 Styles for OneUI Theme
+ * Overrides default SweetAlert2 styles to match OneUI design
+ */
+
+/* Popup Container */
+.swal2-oneui-popup {
+  border-radius: 0.375rem !important;
+  font-family: 'Inter', sans-serif !important;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Title */
+.swal2-oneui-title {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  color: #212529 !important;
+  padding: 1.25rem 1.5rem 0.5rem !important;
+}
+
+/* Text Content */
+.swal2-oneui-text {
+  font-size: 1rem !important;
+  color: #495057 !important;
+  padding: 0.5rem 1.5rem 1.25rem !important;
+  line-height: 1.6 !important;
+}
+
+/* Icons - Match OneUI Colors */
+.swal2-icon.swal2-success {
+  border-color: #139a52 !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: #139a52 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: rgba(19, 154, 82, 0.3) !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #d61f47 !important;
+}
+
+.swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+  background-color: #d61f47 !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #ea580c !important;
+  color: #ea580c !important;
+}
+
+.swal2-icon.swal2-info {
+  border-color: #1391aa !important;
+  color: #1391aa !important;
+}
+
+/* Confirm Button */
+.swal2-popup .btn-primary {
+  background-color: #2356d7 !important;
+  border-color: #2356d7 !important;
+  color: #fff !important;
+  padding: 0.625rem 1.25rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.12s ease-out !important;
+  min-width: 80px !important;
+}
+
+.swal2-popup .btn-primary:hover {
+  background-color: #1d47b0 !important;
+  border-color: #1d47b0 !important;
+  box-shadow: 0 0.25rem 0.5rem rgba(35, 86, 215, 0.3) !important;
+}
+
+.swal2-popup .btn-primary:focus {
+  box-shadow: 0 0 0 0.25rem rgba(35, 86, 215, 0.25) !important;
+}
+
+/* Cancel Button (if used) */
+.swal2-popup .btn-secondary {
+  background-color: #475569 !important;
+  border-color: #475569 !important;
+  color: #fff !important;
+  padding: 0.625rem 1.25rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.12s ease-out !important;
+  min-width: 80px !important;
+}
+
+.swal2-popup .btn-secondary:hover {
+  background-color: #334155 !important;
+  border-color: #334155 !important;
+}
+
+/* Actions Container */
+.swal2-actions {
+  margin-top: 1rem !important;
+  padding: 0 1.5rem 1.5rem !important;
+  gap: 0.75rem !important;
+}
+
+/* Close Button */
+.swal2-close {
+  color: #6c757d !important;
+  font-size: 2rem !important;
+  opacity: 0.6 !important;
+  transition: opacity 0.12s ease-out !important;
+}
+
+.swal2-close:hover {
+  opacity: 1 !important;
+}
+
+/* Backdrop */
+.swal2-container.swal2-backdrop-show {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Animation */
+.swal2-popup.swal2-show {
+  animation: swal2-show 0.2s !important;
+}
+
+.swal2-popup.swal2-hide {
+  animation: swal2-hide 0.15s !important;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .swal2-oneui-popup {
+    width: 90% !important;
+  }
+  
+  .swal2-oneui-title {
+    font-size: 1.25rem !important;
+  }
+  
+  .swal2-oneui-text {
+    font-size: 0.875rem !important;
+  }
+}

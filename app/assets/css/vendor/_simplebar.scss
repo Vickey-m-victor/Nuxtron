@@ -1,0 +1,23 @@
+//
+// Simplebar - https://github.com/Grsmto/simplebar
+// --------------------------------------------------
+
+// CSS is loaded via nuxt.config.ts
+// @import "simplebar/dist/simplebar.css";
+
+// Style overrides
+.simplebar-scrollbar {
+  left: auto;
+  right: 2px;
+  width: 4px;
+}
+
+.simplebar-scrollbar::before {
+  left: 0;
+  right: 0;
+  background: $primary-darker;
+
+  .sidebar-dark #sidebar & {
+    background: $white;
+  }
+}

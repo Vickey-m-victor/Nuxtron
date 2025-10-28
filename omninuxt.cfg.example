@@ -1,0 +1,26 @@
+# OmniNuxt Configuration File
+# Copy this file to omninuxt.cfg and update with your settings
+
+APP_NAME=OmniNuxt
+VERSION=1.0.0
+ENVIRONMENT=dev
+
+# API Configuration
+API_BASE_URL=http://localhost:8080
+
+# Security
+# IMPORTANT: Generate a unique encryption key for production!
+# Command: openssl rand -base64 32
+# Note: Client-side encryption provides limited security - it only protects
+# against casual localStorage inspection, NOT against XSS attacks.
+ENCRYPTION_KEY=CHANGE_THIS_IN_PRODUCTION
+
+# Theme Configuration
+DEFAULT_THEME=oneui
+DEBUG_MODE=true
+
+# Public routes that don't require authentication (comma-separated)
+SAFE_ROUTES=iam/auth/login,iam/auth/signin2,iam/auth/reminder,iam/auth/reminder2,iam/auth/reset-password,playground
+
+# Development Settings
+ENABLE_INQUIRY=true
