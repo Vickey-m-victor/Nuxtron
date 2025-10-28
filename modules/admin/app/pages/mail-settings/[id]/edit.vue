@@ -7,11 +7,14 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { $api } = useNuxtApp()
 const id = route.params.id as string
 
 const { data } = await useFetch<{
   dataPayload: { data: MailSettings }
-}>(`/v1/admin/mail-settings/${id}`)
+}>(`/api/v1/admin/mail-settings/${id}`, {
+  $fetch: $api
+})
 
 const formData = ref<MailSettingsUpdatePayload>({
   id: Number(id),
@@ -23,7 +26,7 @@ const loading = ref(false)
 const handleSubmit = async () => {
   loading.value = true
   try {
-    await $fetch(`/v1/admin/mail-settings/${id}`, {
+    await $api(`/api/v1/admin/mail-settings/${id}`, {
       method: 'PUT',
       body: formData.value
     })

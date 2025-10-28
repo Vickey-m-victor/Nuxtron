@@ -7,11 +7,14 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { $api } = useNuxtApp()
 const id = route.params.id as string
 
 const { data } = await useFetch<{
   dataPayload: { data: Profile }
-}>(`/v1/admin/profiles/${id}`)
+}>(`/api/v1/admin/profile/${id}`, {
+  $fetch: $api
+})
 
 const formData = ref<ProfileUpdatePayload>({
   id: Number(id),
@@ -23,7 +26,7 @@ const loading = ref(false)
 const handleSubmit = async () => {
   loading.value = true
   try {
-    await $fetch(`/v1/admin/profiles/${id}`, {
+    await $api(`/api/v1/admin/profile/${id}`, {
       method: 'PUT',
       body: formData.value
     })

@@ -6,6 +6,7 @@ definePageMeta({
 })
 
 const router = useRouter()
+const { $api } = useNuxtApp()
 const loading = ref(false)
 const formData = ref<MailSettingsCreatePayload>({
   smtp_server: '',
@@ -18,7 +19,7 @@ const formData = ref<MailSettingsCreatePayload>({
 const handleSubmit = async () => {
   loading.value = true
   try {
-    await $fetch(`/v1/admin/mail-settings`, {
+    await $api(`/api/v1/admin/mail-settings`, {
       method: 'POST',
       body: formData.value
     })

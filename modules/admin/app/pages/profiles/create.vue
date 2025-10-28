@@ -6,6 +6,7 @@ definePageMeta({
 })
 
 const router = useRouter()
+const { $api } = useNuxtApp()
 const loading = ref(false)
 const formData = ref<ProfileCreatePayload>({
   first_name: '',
@@ -20,7 +21,7 @@ const formData = ref<ProfileCreatePayload>({
 const handleSubmit = async () => {
   loading.value = true
   try {
-    await $fetch(`/v1/admin/profiles`, {
+    await $api(`/api/v1/admin/profile`, {
       method: 'POST',
       body: formData.value
     })

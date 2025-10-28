@@ -7,11 +7,14 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { $api } = useNuxtApp()
 const id = route.params.id as string
 
 const { data, pending, error } = await useFetch<{
   dataPayload: { data: MailSettings }
-}>(`/v1/admin/mail-settings/${id}`)
+}>(`/api/v1/admin/mail-settings/${id}`, {
+  $fetch: $api
+})
 
 const item = computed(() => data.value?.dataPayload?.data)
 </script>

@@ -7,16 +7,18 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { $api } = useNuxtApp()
 
-const { data, pending, error, refresh } = await useFetch<{
+const { data, pending, error, refresh} = await useFetch<{
   dataPayload: {
     data: Profile[]
     totalCount: number
     currentPage: number
   }
-}>(`/v1/admin/profiles`, {
+}>(`/api/v1/admin/profiles`, {
   query: route.query,
-  watch: [() => route.query]
+  watch: [() => route.query],
+  $fetch: $api
 })
 
 const profiles = computed(() => data.value?.dataPayload?.data || [])
@@ -32,7 +34,7 @@ const handleEdit = (id: number) => {
 const handleDelete = async (id: number) => {
   if (confirm('Are you sure you want to delete this item?')) {
     try {
-      await $fetch(`/v1/admin/profiles/${id}`, {
+      await $api(`/api/v1/admin/profile/${id}`, {
         method: 'DELETE'
       })
       await refresh()

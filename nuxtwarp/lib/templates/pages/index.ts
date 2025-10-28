@@ -3,7 +3,8 @@ import type { EntityDefinition } from '../../types/index.js'
 export function indexPageTemplate(moduleName: string, entity: EntityDefinition): string {
   const entityLower = entity.name.charAt(0).toLowerCase() + entity.name.slice(1)
   const entityPlural = pluralize(entityLower)
-  const route = kebabCase(entityPlural)
+  const entityRoutePlural = kebabCase(entityPlural)
+  const entityRouteSingular = kebabCase(entityLower)
 
   return `<script setup lang="ts">
 import type { ${entity.name} } from '../../types/entities/${kebabCase(entity.name)}.js'
@@ -14,32 +15,34 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { $api } = useNuxtApp()
 
-const { data, pending, error, refresh } = await useFetch<{
+const { data, pending, error, refresh} = await useFetch<{
   dataPayload: {
     data: ${entity.name}[]
     totalCount: number
     currentPage: number
   }
-}>(\`/v1/${moduleName}/${route}\`, {
+}>(\`/api/v1/${moduleName}/${entityRoutePlural}\`, {
   query: route.query,
-  watch: [() => route.query]
+  watch: [() => route.query],
+  $fetch: $api
 })
 
 const ${entityPlural} = computed(() => data.value?.dataPayload?.data || [])
 
 const handleView = (id: number) => {
-  router.push(\`/${moduleName}/${route}/\${id}\`)
+  router.push(\`/${moduleName}/${entityRoutePlural}/\${id}\`)
 }
 
 const handleEdit = (id: number) => {
-  router.push(\`/${moduleName}/${route}/\${id}/edit\`)
+  router.push(\`/${moduleName}/${entityRoutePlural}/\${id}/edit\`)
 }
 
 const handleDelete = async (id: number) => {
   if (confirm('Are you sure you want to delete this item?')) {
     try {
-      await $fetch(\`/v1/${moduleName}/${route}/\${id}\`, {
+      await $api(\`/api/v1/${moduleName}/${entityRouteSingular}/\${id}\`, {
         method: 'DELETE'
       })
       await refresh()
@@ -55,7 +58,7 @@ const handleDelete = async (id: number) => {
     <BasePageHeading :title="'${entity.name} List'">
       <template #extra>
         <NuxtLink 
-          :to="\`/${moduleName}/${route}/create\`"
+          :to="\`/${moduleName}/${entityRoutePlural}/create\`"
           class="btn btn-primary"
         >
           <i class="fa fa-plus me-1"></i>
@@ -124,7 +127,10 @@ ${entity.properties.slice(0, 5).map(p => `              <td>{{ item.${p.name} }}
 }
 
 export function createPageTemplate(moduleName: string, entity: EntityDefinition): string {
-  const route = kebabCase(pluralize(entity.name.charAt(0).toLowerCase() + entity.name.slice(1)))
+  const entityLower = entity.name.charAt(0).toLowerCase() + entity.name.slice(1)
+  const entityPlural = pluralize(entityLower)
+  const entityRoutePlural = kebabCase(entityPlural)
+  const entityRouteSingular = kebabCase(entityLower)
 
   return `<script setup lang="ts">
 import type { ${entity.name}CreatePayload } from '../../types/${kebabCase(entity.name)}-dto.js'
@@ -134,6 +140,7 @@ definePageMeta({
 })
 
 const router = useRouter()
+const { $api } = useNuxtApp()
 const loading = ref(false)
 const formData = ref<${entity.name}CreatePayload>({
 ${entity.properties
@@ -145,12 +152,12 @@ ${entity.properties
 const handleSubmit = async () => {
   loading.value = true
   try {
-    await $fetch(\`/v1/${moduleName}/${route}\`, {
+    await $api(\`/api/v1/${moduleName}/${entityRouteSingular}\`, {
       method: 'POST',
       body: formData.value
     })
     
-    router.push(\`/${moduleName}/${route}\`)
+    router.push(\`/${moduleName}/${entityRoutePlural}\`)
   } catch (error) {
     console.error('Create failed:', error)
   } finally {
@@ -179,7 +186,7 @@ ${entity.properties
             {{ loading ? 'Creating...' : 'Create' }}
           </button>
           <NuxtLink 
-            :to="\`/${moduleName}/${route}\`"
+            :to="\`/${moduleName}/${entityRoutePlural}\`"
             class="btn btn-secondary ms-2"
           >
             Cancel
@@ -193,7 +200,10 @@ ${entity.properties
 }
 
 export function viewPageTemplate(moduleName: string, entity: EntityDefinition): string {
-  const route = kebabCase(pluralize(entity.name.charAt(0).toLowerCase() + entity.name.slice(1)))
+  const entityLower = entity.name.charAt(0).toLowerCase() + entity.name.slice(1)
+  const entityPlural = pluralize(entityLower)
+  const entityRoutePlural = kebabCase(entityPlural)
+  const entityRouteSingular = kebabCase(entityLower)
 
   return `<script setup lang="ts">
 import type { ${entity.name} } from '../../types/entities/${kebabCase(entity.name)}.js'
@@ -204,11 +214,14 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { $api } = useNuxtApp()
 const id = route.params.id as string
 
 const { data, pending, error } = await useFetch<{
   dataPayload: { data: ${entity.name} }
-}>(\`/v1/${moduleName}/${route}/\${id}\`)
+}>(\`/api/v1/${moduleName}/${entityRouteSingular}/\${id}\`, {
+  $fetch: $api
+})
 
 const item = computed(() => data.value?.dataPayload?.data)
 </script>
@@ -218,14 +231,14 @@ const item = computed(() => data.value?.dataPayload?.data)
     <BasePageHeading :title="'View ${entity.name}'">
       <template #extra>
         <NuxtLink 
-          :to="\`/${moduleName}/${route}/\${id}/edit\`"
+          :to="\`/${moduleName}/${entityRoutePlural}/\${id}/edit\`"
           class="btn btn-warning me-2"
         >
           <i class="fa fa-pencil me-1"></i>
           Edit
         </NuxtLink>
         <NuxtLink 
-          :to="\`/${moduleName}/${route}\`"
+          :to="\`/${moduleName}/${entityRoutePlural}\`"
           class="btn btn-secondary"
         >
           <i class="fa fa-arrow-left me-1"></i>
@@ -250,7 +263,10 @@ ${entity.properties.map(p => `        <div class="mb-3">
 }
 
 export function editPageTemplate(moduleName: string, entity: EntityDefinition): string {
-  const route = kebabCase(pluralize(entity.name.charAt(0).toLowerCase() + entity.name.slice(1)))
+  const entityLower = entity.name.charAt(0).toLowerCase() + entity.name.slice(1)
+  const entityPlural = pluralize(entityLower)
+  const entityRoutePlural = kebabCase(entityPlural)
+  const entityRouteSingular = kebabCase(entityLower)
 
   return `<script setup lang="ts">
 import type { ${entity.name}, ${entity.name}UpdatePayload } from '../../types/${kebabCase(entity.name)}-dto.js'
@@ -261,11 +277,14 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { $api } = useNuxtApp()
 const id = route.params.id as string
 
 const { data } = await useFetch<{
   dataPayload: { data: ${entity.name} }
-}>(\`/v1/${moduleName}/${route}/\${id}\`)
+}>(\`/api/v1/${moduleName}/${entityRouteSingular}/\${id}\`, {
+  $fetch: $api
+})
 
 const formData = ref<${entity.name}UpdatePayload>({
   id: Number(id),
@@ -277,12 +296,12 @@ const loading = ref(false)
 const handleSubmit = async () => {
   loading.value = true
   try {
-    await $fetch(\`/v1/${moduleName}/${route}/\${id}\`, {
+    await $api(\`/api/v1/${moduleName}/${entityRouteSingular}/\${id}\`, {
       method: 'PUT',
       body: formData.value
     })
     
-    router.push(\`/${moduleName}/${route}\`)
+    router.push(\`/${moduleName}/${entityRoutePlural}\`)
   } catch (error) {
     console.error('Update failed:', error)
   } finally {
@@ -311,7 +330,7 @@ ${entity.properties
             {{ loading ? 'Updating...' : 'Update' }}
           </button>
           <NuxtLink 
-            :to="\`/${moduleName}/${route}\`"
+            :to="\`/${moduleName}/${entityRoutePlural}\`"
             class="btn btn-secondary ms-2"
           >
             Cancel

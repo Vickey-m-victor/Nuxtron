@@ -16,7 +16,6 @@ export default defineNuxtPlugin(() => {
 
   // Create custom $fetch instance with interceptors
   const apiFetch: typeof $fetch = $fetch.create({
-    baseURL: config.public.apiBase,
     credentials: 'include', // Always send cookies
 
     // Add Authorization header to all requests
