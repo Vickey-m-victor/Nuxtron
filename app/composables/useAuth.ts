@@ -1,3 +1,5 @@
+import type { AlertifyPayload } from './useAlertify'
+
 export const useAuth = () => {
   const authStore = useAuthStore()
   const { handleAlertify } = useAlertify()
@@ -14,11 +16,7 @@ export const useAuth = () => {
           }
         }
       }
-      alertifyPayload?: {
-        message: string
-        theme: string
-        type: string
-      }
+      alertifyPayload?: AlertifyPayload
     }>('/api/auth/login', {
       method: 'POST',
       body: credentials,

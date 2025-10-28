@@ -5,7 +5,7 @@ import Swal from 'sweetalert2'
 /**
  * AlertifyPayload structure from backend
  */
-interface AlertifyPayload {
+export interface AlertifyPayload {
   message: string
   theme: 'success' | 'error' | 'warning' | 'info'
   type: 'toast' | 'alert'

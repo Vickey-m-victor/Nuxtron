@@ -15,17 +15,15 @@ export default defineNuxtPlugin(() => {
   }
 
   // Create custom $fetch instance with interceptors
-  const apiFetch = $fetch.create({
+  const apiFetch: typeof $fetch = $fetch.create({
     baseURL: config.public.apiBase,
     credentials: 'include', // Always send cookies
 
     // Add Authorization header to all requests
     onRequest({ options }) {
       if (authStore.user.token) {
-        options.headers = {
-          ...options.headers,
-          Authorization: `Bearer ${authStore.user.token}`
-        }
+        options.headers = new Headers(options.headers)
+        options.headers.set('Authorization', `Bearer ${authStore.user.token}`)
       }
     },
 
@@ -38,8 +36,8 @@ export default defineNuxtPlugin(() => {
     },
 
     // Handle 401 errors with automatic token refresh
-    async onResponseError({ response, options }) {
-      const originalRequest = options
+    async onResponseError({ response, options, request }) {
+      const originalRequest = options as any
 
       // Check for alertifyPayload in error responses
       if (response._data?.alertifyPayload) {
@@ -52,11 +50,9 @@ export default defineNuxtPlugin(() => {
           // Queue this request until token is refreshed
           return new Promise((resolve) => {
             subscribeTokenRefresh((token: string) => {
-              originalRequest.headers = {
-                ...originalRequest.headers,
-                Authorization: `Bearer ${token}`
-              }
-              resolve(apiFetch(originalRequest.url as string, originalRequest))
+              originalRequest.headers = new Headers(originalRequest.headers)
+              originalRequest.headers.set('Authorization', `Bearer ${token}`)
+              resolve(apiFetch(request as string, originalRequest))
             })
           })
         }
@@ -83,12 +79,10 @@ export default defineNuxtPlugin(() => {
             onTokenRefreshed(newToken)
 
             // Retry original request with new token
-            originalRequest.headers = {
-              ...originalRequest.headers,
-              Authorization: `Bearer ${newToken}`
-            }
+            originalRequest.headers = new Headers(originalRequest.headers)
+            originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
 
-            return apiFetch(originalRequest.url as string, originalRequest)
+            return apiFetch(request as string, originalRequest)
           }
         } catch (error) {
           // Refresh failed - logout

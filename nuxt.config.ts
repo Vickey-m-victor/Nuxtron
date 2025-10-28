@@ -34,6 +34,15 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   
+  // Disable SSR for all routes except auth pages
+  // This prevents flash of unauthenticated/authenticated content
+  ssr: false,
+  
+  // Auth pages can use SSR since they're public
+  routeRules: {
+    '/iam/auth/**': { ssr: true }
+  },
+  
   // Fully automatic module discovery - scans filesystem at runtime!
   modules: [
     './app/utils/full-auto-discovery',

@@ -1,5 +1,14 @@
-export default defineNuxtRouteMiddleware((to) => {
+export default defineNuxtRouteMiddleware((to, from) => {
+  // Skip middleware on server-side entirely
+  // Authentication state only exists in localStorage on client
+  if (!import.meta.client) {
+    return
+  }
+
   const authStore = useAuthStore()
+  
+  // Always ensure store is initialized before checking authentication
+  authStore.initStore()
   
   // Public routes that don't require authentication
   const publicRoutes = [
@@ -20,16 +29,30 @@ export default defineNuxtRouteMiddleware((to) => {
     '/iam/auth/two-factor3'
   ]
 
-  // Check if route is public (exact match for root, startsWith for others)
-  const isPublicRoute = to.path === '/' || publicRoutes.some(route => to.path.startsWith(route))
+  // Check if route is public
+  const isPublicRoute = publicRoutes.some(route => to.path.startsWith(route))
 
-  // Redirect unauthenticated users to login
-  if (!authStore.isAuthenticated && !isPublicRoute) {
-    return navigateTo('/iam/auth/login')
+  // Check authentication status after initialization
+  const isAuthenticated = authStore.isAuthenticated
+
+  // Homepage redirect logic
+  if (to.path === '/') {
+    if (isAuthenticated) {
+      // Logged in users go to dashboard
+      return navigateTo('/dashboard', { replace: true })
+    } else {
+      // Not logged in users go to login page
+      return navigateTo('/iam/auth/login', { replace: true })
+    }
   }
 
-  // Redirect authenticated users away from auth pages
-  if (authStore.isAuthenticated && to.path.startsWith('/iam/auth/')) {
-    return navigateTo('/dashboard')
+  // Redirect unauthenticated users to login
+  if (!isAuthenticated && !isPublicRoute) {
+    return navigateTo('/iam/auth/login', { replace: true })
+  }
+
+  // Redirect authenticated users away from auth pages to dashboard
+  if (isAuthenticated && to.path.startsWith('/iam/auth/')) {
+    return navigateTo('/dashboard', { replace: true })
   }
 })

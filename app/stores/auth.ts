@@ -9,20 +9,32 @@ interface User {
   menus: Record<string, any>
 }
 
+interface AuthState {
+  user: User
+  initialized: boolean
+}
+
 export const useAuthStore = defineStore('auth', {
-  state: (): { user: User } => ({
+  state: (): AuthState => ({
     user: {
       username: null,
       token: null,
       isAuthenticated: false,
       permissions: [],
       menus: {}
-    }
+    },
+    initialized: false
   }),
 
   actions: {
     // Initialize from localStorage on app start
     initStore() {
+      // Only initialize once per store instance
+      // But allow re-initialization if the user is not authenticated (in case of manual logout)
+      if (this.initialized && this.user.isAuthenticated) {
+        return
+      }
+      
       if (import.meta.client) {
         const encryptedToken = localStorage.getItem('auth.token')
         const username = localStorage.getItem('auth.username')
@@ -39,6 +51,8 @@ export const useAuthStore = defineStore('auth', {
             this.clearAuth()
           }
         }
+        
+        this.initialized = true
       }
     },
 

@@ -8,7 +8,10 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "discover-modules": "node scripts/discover-modules.mjs"
+    "discover-modules": "node scripts/discover-modules.mjs",
+    "warp": "tsx nuxtwarp/bin/nuxtwarp.ts",
+    "warp:module": "tsx nuxtwarp/bin/nuxtwarp.ts module create",
+    "warp:doctor": "tsx nuxtwarp/bin/nuxtwarp.ts doctor check"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
@@ -29,6 +32,7 @@
     "@types/bootstrap": "^5.2.10",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^24.6.2",
-    "sass-embedded": "^1.93.2"
+    "sass-embedded": "^1.93.2",
+    "tsx": "^4.20.6"
   }
 }
