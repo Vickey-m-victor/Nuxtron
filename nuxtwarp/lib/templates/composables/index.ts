@@ -5,41 +5,52 @@ export function apiComposableTemplate(moduleName: string, entity: EntityDefiniti
   const entityPlural = pluralize(entityLower)
   const route = kebabCase(entityPlural)
 
+  // Use actual endpoints from OpenAPI or fallback to convention
+  const listEndpoint = entity.endpoints?.list || `/${moduleName}/${route}`
+  const viewEndpoint = entity.endpoints?.view || `/${moduleName}/${route}/{id}`
+  const createEndpoint = entity.endpoints?.create || `/${moduleName}/${route}`
+  const updateEndpoint = entity.endpoints?.update || `/${moduleName}/${route}/{id}`
+  const deleteEndpoint = entity.endpoints?.delete || `/${moduleName}/${route}/{id}`
+
   return `import type { ${entity.name}, ${entity.name}CreatePayload, ${entity.name}UpdatePayload } from '../../types/${kebabCase(entity.name)}-dto.js'
 
 export const use${entity.name} = () => {
   const config = useRuntimeConfig()
-  const baseUrl = \`\${config.public.apiBaseUrl}/v1/${moduleName}/${route}\`
 
   const fetchAll = async (params?: Record<string, any>) => {
-    return await useFetch<{ dataPayload: { data: ${entity.name}[] } }>(baseUrl, {
+    const url = \`\${config.public.apiBaseUrl}/v1${listEndpoint}\`
+    return await useFetch<{ dataPayload: { data: ${entity.name}[] } }>(url, {
       params,
       method: 'GET'
     })
   }
 
   const fetchOne = async (id: number) => {
-    return await useFetch<{ dataPayload: { data: ${entity.name} } }>(\`\${baseUrl}/\${id}\`, {
+    const url = \`\${config.public.apiBaseUrl}/v1${viewEndpoint}\`.replace('{id}', String(id))
+    return await useFetch<{ dataPayload: { data: ${entity.name} } }>(url, {
       method: 'GET'
     })
   }
 
   const create = async (payload: ${entity.name}CreatePayload) => {
-    return await $fetch<{ dataPayload: { data: ${entity.name} } }>(baseUrl, {
+    const url = \`\${config.public.apiBaseUrl}/v1${createEndpoint}\`
+    return await $fetch<{ dataPayload: { data: ${entity.name} } }>(url, {
       method: 'POST',
       body: payload
     })
   }
 
   const update = async (id: number, payload: ${entity.name}UpdatePayload) => {
-    return await $fetch(\`\${baseUrl}/\${id}\`, {
+    const url = \`\${config.public.apiBaseUrl}/v1${updateEndpoint}\`.replace('{id}', String(id))
+    return await $fetch(url, {
       method: 'PUT',
       body: payload
     })
   }
 
   const remove = async (id: number) => {
-    return await $fetch(\`\${baseUrl}/\${id}\`, {
+    const url = \`\${config.public.apiBaseUrl}/v1${deleteEndpoint}\`.replace('{id}', String(id))
+    return await $fetch(url, {
       method: 'DELETE'
     })
   }

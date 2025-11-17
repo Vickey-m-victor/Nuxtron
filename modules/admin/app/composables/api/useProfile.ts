@@ -2,37 +2,41 @@ import type { Profile, ProfileCreatePayload, ProfileUpdatePayload } from '../../
 
 export const useProfile = () => {
   const config = useRuntimeConfig()
-  const baseUrl = `${config.public.apiBaseUrl}/v1/admin/profiles`
 
   const fetchAll = async (params?: Record<string, any>) => {
-    return await useFetch<{ dataPayload: { data: Profile[] } }>(baseUrl, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/profiles`
+    return await useFetch<{ dataPayload: { data: Profile[] } }>(url, {
       params,
       method: 'GET'
     })
   }
 
   const fetchOne = async (id: number) => {
-    return await useFetch<{ dataPayload: { data: Profile } }>(`${baseUrl}/${id}`, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/profile/{id}`.replace('{id}', String(id))
+    return await useFetch<{ dataPayload: { data: Profile } }>(url, {
       method: 'GET'
     })
   }
 
   const create = async (payload: ProfileCreatePayload) => {
-    return await $fetch<{ dataPayload: { data: Profile } }>(baseUrl, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/profile`
+    return await $fetch<{ dataPayload: { data: Profile } }>(url, {
       method: 'POST',
       body: payload
     })
   }
 
   const update = async (id: number, payload: ProfileUpdatePayload) => {
-    return await $fetch(`${baseUrl}/${id}`, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/profile/{id}`.replace('{id}', String(id))
+    return await $fetch(url, {
       method: 'PUT',
       body: payload
     })
   }
 
   const remove = async (id: number) => {
-    return await $fetch(`${baseUrl}/${id}`, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/profile/{id}`.replace('{id}', String(id))
+    return await $fetch(url, {
       method: 'DELETE'
     })
   }

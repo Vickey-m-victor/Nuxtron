@@ -57,9 +57,10 @@ export default defineNuxtConfig({
     }
   ],
     
-  // Load OneUI CSS for the OneUI layout
+  // Load OneUI CSS and Bootstrap Icons
   css: [
     '~/assets/css/main.scss',
+    'bootstrap-icons/font/bootstrap-icons.css'
   ],
 
   // Vite configuration

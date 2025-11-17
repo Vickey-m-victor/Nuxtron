@@ -47,11 +47,16 @@ export default defineNuxtPlugin(() => {
       if (response.status === 401 && !originalRequest.retry) {
         if (isRefreshing) {
           // Queue this request until token is refreshed
-          return new Promise((resolve) => {
+          return new Promise((resolve, reject) => {
             subscribeTokenRefresh((token: string) => {
-              originalRequest.headers = new Headers(originalRequest.headers)
-              originalRequest.headers.set('Authorization', `Bearer ${token}`)
-              resolve(apiFetch(request as string, originalRequest))
+              if (token) {
+                originalRequest.headers = new Headers(originalRequest.headers)
+                originalRequest.headers.set('Authorization', `Bearer ${token}`)
+                resolve(apiFetch(request as string, originalRequest))
+              } else {
+                // Refresh failed, reject queued requests
+                reject(new Error('Token refresh failed'))
+              }
             })
           })
         }
@@ -74,7 +79,7 @@ export default defineNuxtPlugin(() => {
             // Update store
             authStore.setToken(newToken, authStore.user.username!)
 
-            // Notify queued requests
+            // Notify queued requests with new token
             onTokenRefreshed(newToken)
 
             // Retry original request with new token
@@ -82,14 +87,29 @@ export default defineNuxtPlugin(() => {
             originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
 
             return apiFetch(request as string, originalRequest)
+          } else {
+            throw new Error('No access token in refresh response')
           }
         } catch (error) {
-          // Refresh failed - logout
+          console.error('Token refresh failed:', error)
+          
+          // ✅ Graceful logout on refresh failure
+          // Notify queued requests that refresh failed
+          onTokenRefreshed('')
+          
+          // Clear auth state
           authStore.clearAuth()
-          navigateTo('/iam/auth/login')
+          
+          // Redirect to login (only if not already there)
+          const currentPath = window.location.pathname
+          if (!currentPath.startsWith('/iam/auth/')) {
+            await navigateTo('/iam/auth/login', { replace: true })
+          }
+          
           throw error
         } finally {
           isRefreshing = false
+          refreshSubscribers = [] // Clear queue
         }
       }
     }

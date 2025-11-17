@@ -10,6 +10,10 @@ export default {
     "audit": false,
     "export": true
   },
+  "ui": {
+    "useModal": true,
+    "modalSize": "lg"
+  },
   "entities": {
     "profile": {
       "pagination": {
@@ -39,6 +43,7 @@ export default {
       },
       "actions": [
         "view",
+        "create",
         "edit",
         "delete"
       ],
@@ -71,13 +76,9 @@ export default {
         ]
       },
       "actions": [
-        "view",
-        "edit",
-        "delete"
+        "view"
       ],
-      "bulkActions": [
-        "delete"
-      ]
+      "bulkActions": []
     }
   }
 }

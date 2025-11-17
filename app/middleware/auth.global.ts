@@ -1,3 +1,5 @@
+import { isTokenExpired } from '~/utils/jwt'
+
 export default defineNuxtRouteMiddleware((to, from) => {
   // Skip middleware on server-side entirely
   // Authentication state only exists in localStorage on client
@@ -32,8 +34,16 @@ export default defineNuxtRouteMiddleware((to, from) => {
   // Check if route is public
   const isPublicRoute = publicRoutes.some(route => to.path.startsWith(route))
 
-  // Check authentication status after initialization
-  const isAuthenticated = authStore.isAuthenticated
+  // ✅ VALIDATE token expiration, not just existence
+  const isAuthenticated = authStore.isAuthenticated && 
+                          authStore.user.token && 
+                          !isTokenExpired(authStore.user.token)
+
+  // If token is expired but user is marked as authenticated, clear it
+  if (authStore.isAuthenticated && authStore.user.token && isTokenExpired(authStore.user.token)) {
+    console.warn('Token expired in middleware, clearing auth state')
+    authStore.clearAuth()
+  }
 
   // Homepage redirect logic
   if (to.path === '/') {

@@ -1,4 +1,5 @@
-<script setup>
+<script setup lang="ts">
+import { ref } from 'vue'
 import { useMainStore } from "@/store/index";
 
 // Main store and Router
@@ -60,12 +61,6 @@ const { logout } = useAuth();
                       href="javascript:void(0)"
                     >
                       <span class="fs-sm fw-medium">Manage Account</span>
-                    </a>
-                    <a
-                      class="dropdown-item d-flex align-items-center justify-content-between"
-                      href="javascript:void(0)"
-                    >
-                      <span class="fs-sm fw-medium">Settings</span>
                     </a>
                   </div>
                   <div role="separator" class="dropdown-divider m-0"></div>

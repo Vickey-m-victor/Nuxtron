@@ -13,10 +13,19 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    // Wrap the body in ChangePassword object as expected by Yii API
+    const requestBody = {
+      ChangePassword: {
+        currentPassword: body.currentPassword,
+        newPassword: body.newPassword,
+        confirmNewPassword: body.confirmNewPassword
+      }
+    }
+
     const response = await $fetch('/v1/iam/auth/change-password', {
-      method: 'POST',
+      method: 'PUT',
       baseURL: config.public.apiBase,
-      body,
+      body: requestBody,
       headers: {
         authorization: authHeader,
         cookie: event.node.req.headers.cookie || ''
@@ -25,9 +34,17 @@ export default defineEventHandler(async (event) => {
 
     return response
   } catch (error: any) {
+    console.error('Change password API error:', error)
+    
+    // Extract error details from the backend response
+    const statusCode = error.response?.status || error.statusCode || 500
+    const errorData = error.response?._data || error.data || {}
+    
     throw createError({
-      statusCode: error.response?.status || 500,
-      message: error.response?._data?.message || error.message || 'Password change failed'
+      statusCode,
+      statusMessage: error.response?.statusText || 'Server Error',
+      data: errorData,
+      message: errorData.message || error.message || 'Password change failed'
     })
   }
 })

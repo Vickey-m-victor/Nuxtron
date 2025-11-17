@@ -1,7 +1,16 @@
+<script setup lang="ts">
+import GlobalModal from '~/components/global/GlobalModal.vue'
+</script>
+
 <template>
+  <div>
     <NuxtLayout>
       <NuxtPage/>
     </NuxtLayout>
+    
+    <!-- Global Modal - renders anywhere in the app -->
+    <GlobalModal />
+  </div>
 </template>
 
 <style>

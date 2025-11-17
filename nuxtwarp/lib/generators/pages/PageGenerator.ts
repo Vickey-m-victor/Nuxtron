@@ -1,7 +1,7 @@
 import { Generator } from '../../core/Generator.js'
 import type { EntityDefinition } from '../../types/index.js'
 import { FileSystem } from '../../core/FileSystem.js'
-import { indexPageTemplate, createPageTemplate, viewPageTemplate, editPageTemplate } from '../../templates/pages/index.js'
+import { indexPageTemplate, createPageTemplate, viewPageTemplate, editPageTemplate, formComponentTemplate } from '../../templates/pages/index.js'
 
 export class PageGenerator extends Generator {
   private fs!: FileSystem
@@ -13,8 +13,15 @@ export class PageGenerator extends Generator {
   async generatePages(modulePath: string, moduleName: string, entity: EntityDefinition): Promise<void> {
     this.fs = new FileSystem(this.logger, this.isDryRun())
     
-    const entityPath = `${modulePath}/app/pages/${this.pluralize(this.kebabCase(entity.name))}`
+    // Use routePath from entity if available, otherwise fallback to pluralized kebab-case name
+    const routePath = entity.routePath || this.pluralize(this.kebabCase(entity.name))
+    const entityPath = `${modulePath}/app/pages/${routePath}`
+    
+    this.logger.info(`  Generating pages at: ${routePath}`)
     this.fs.mkdir(entityPath)
+    
+    // Generate reusable form component first
+    await this.generateFormComponent(modulePath, moduleName, entity)
     
     // Generate index page (list)
     await this.generateIndexPage(entityPath, moduleName, entity)
@@ -27,6 +34,15 @@ export class PageGenerator extends Generator {
     
     // Generate edit page [id]/edit.vue
     await this.generateEditPage(entityPath, moduleName, entity)
+  }
+
+  private async generateFormComponent(modulePath: string, moduleName: string, entity: EntityDefinition): Promise<void> {
+    const componentsPath = `${modulePath}/app/components`
+    this.fs.mkdir(componentsPath)
+    
+    const content = formComponentTemplate(moduleName, entity)
+    this.fs.write(`${componentsPath}/${entity.name}Form.vue`, content, { force: this.options.force })
+    this.logger.info(`  Generated form component: ${entity.name}Form.vue`)
   }
 
   private async generateIndexPage(entityPath: string, moduleName: string, entity: EntityDefinition): Promise<void> {

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { encrypt, decrypt } from '~/utils/crypto'
+import { isTokenExpired } from '~/utils/jwt'
 
 interface User {
   username: string | null
@@ -43,8 +44,18 @@ export const useAuthStore = defineStore('auth', {
           try {
             const token = decrypt(encryptedToken)
             if (token) {
-              this.setToken(token, username)
-              this.loadUserData()
+              // ✅ VALIDATE token before using it
+              if (isTokenExpired(token)) {
+                console.warn('Token expired on initialization')
+                // Don't set the token, but mark as needing refresh
+                this.user.username = username
+                this.user.token = null
+                this.user.isAuthenticated = false
+              } else {
+                // Token is valid
+                this.setToken(token, username)
+                this.loadUserData()
+              }
             }
           } catch (error) {
             console.warn('Failed to decrypt token:', error)

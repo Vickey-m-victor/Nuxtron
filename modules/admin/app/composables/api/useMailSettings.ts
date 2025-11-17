@@ -2,37 +2,41 @@ import type { MailSettings, MailSettingsCreatePayload, MailSettingsUpdatePayload
 
 export const useMailSettings = () => {
   const config = useRuntimeConfig()
-  const baseUrl = `${config.public.apiBaseUrl}/v1/admin/mail-settingses`
 
   const fetchAll = async (params?: Record<string, any>) => {
-    return await useFetch<{ dataPayload: { data: MailSettings[] } }>(baseUrl, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/mail-settingses`
+    return await useFetch<{ dataPayload: { data: MailSettings[] } }>(url, {
       params,
       method: 'GET'
     })
   }
 
   const fetchOne = async (id: number) => {
-    return await useFetch<{ dataPayload: { data: MailSettings } }>(`${baseUrl}/${id}`, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/mail-settingses/{id}`.replace('{id}', String(id))
+    return await useFetch<{ dataPayload: { data: MailSettings } }>(url, {
       method: 'GET'
     })
   }
 
   const create = async (payload: MailSettingsCreatePayload) => {
-    return await $fetch<{ dataPayload: { data: MailSettings } }>(baseUrl, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/mail-settingses`
+    return await $fetch<{ dataPayload: { data: MailSettings } }>(url, {
       method: 'POST',
       body: payload
     })
   }
 
   const update = async (id: number, payload: MailSettingsUpdatePayload) => {
-    return await $fetch(`${baseUrl}/${id}`, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/mail-settingses/{id}`.replace('{id}', String(id))
+    return await $fetch(url, {
       method: 'PUT',
       body: payload
     })
   }
 
   const remove = async (id: number) => {
-    return await $fetch(`${baseUrl}/${id}`, {
+    const url = `${config.public.apiBaseUrl}/v1/admin/mail-settingses/{id}`.replace('{id}', String(id))
+    return await $fetch(url, {
       method: 'DELETE'
     })
   }

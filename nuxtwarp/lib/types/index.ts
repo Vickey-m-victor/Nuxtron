@@ -81,6 +81,16 @@ export interface EntityDefinition {
   relationships: Relationship[]
   validations: ValidationRule[]
   metadata: EntityMetadata
+  endpoints?: EntityEndpoints
+  routePath?: string // The actual resource path from OpenAPI (e.g., 'rbac/roles')
+}
+
+export interface EntityEndpoints {
+  list?: string
+  view?: string
+  create?: string
+  update?: string
+  delete?: string
 }
 
 export interface PropertyDefinition {

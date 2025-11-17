@@ -20,6 +20,11 @@ export default {
       name: "Home",
       to: "/dashboard",
       icon: "si si-home",
+    }, 
+    {
+      name: "Profiles",
+      to: "/admin/profiles",
+      icon: "si si-user",
     },
     // You can also set an external link to your main navigation and it will render as a link
     // {

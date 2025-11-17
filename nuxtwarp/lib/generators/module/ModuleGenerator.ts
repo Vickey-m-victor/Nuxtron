@@ -6,12 +6,14 @@ import { FileSystem } from '../../core/FileSystem.js'
 import { fetchOpenApiSchema } from '../../parsers/api-client.js'
 import { OpenApiParser } from '../../parsers/OpenApiParser.js'
 import { SchemaAnalyzer } from '../../parsers/SchemaAnalyzer.js'
+import { EndpointExtractor } from '../../parsers/EndpointExtractor.js'
 import { TypeGenerator } from '../types/TypeGenerator.js'
 import { PageGenerator } from '../pages/PageGenerator.js'
 import { ComposableGenerator } from '../composables/ComposableGenerator.js'
 
 export class ModuleGenerator extends Generator {
   private fs: FileSystem
+  private rawSchema: any  // Store raw schema for later use
 
   constructor(
     config: NuxtWarpConfig,
@@ -33,6 +35,9 @@ export class ModuleGenerator extends Generator {
     // Fetch schema from API
     const rawSchema = await fetchOpenApiSchema(moduleName, this.config.API_BASE_URL)
     
+    // Store raw schema for later use
+    this.rawSchema = rawSchema
+    
     // Parse schema
     this.logger.step(2, 5, 'Parsing OpenAPI schema')
     const parser = new OpenApiParser(rawSchema)
@@ -43,6 +48,25 @@ export class ModuleGenerator extends Generator {
     }
     
     this.logger.info(`Found ${entities.length} entities: ${entities.map(e => e.name).join(', ')}`)
+    
+    // Extract API endpoints from OpenAPI paths
+    this.logger.info('Extracting API endpoints from OpenAPI paths')
+    const endpointExtractor = new EndpointExtractor(rawSchema, moduleName)
+    const allEndpoints = endpointExtractor.extractEndpoints()
+    
+    // Attach endpoints and route paths to entities
+    for (const entity of entities) {
+      entity.endpoints = allEndpoints[entity.name] || endpointExtractor.getEntityEndpoints(entity.name)
+      entity.routePath = endpointExtractor.getRoutePath(entity.name) || undefined
+      
+      if (entity.endpoints && Object.keys(entity.endpoints).length > 0) {
+        this.logger.info(`  ${entity.name}:`)
+        this.logger.info(`    Endpoints: ${JSON.stringify(entity.endpoints)}`)
+        this.logger.info(`    Route Path: ${entity.routePath || 'not found, will use convention-based'}`)
+      } else {
+        this.logger.warn(`  ${entity.name}: No endpoints found, will use convention-based URLs`)
+      }
+    }
     
     // Analyze schema
     const analyzer = new SchemaAnalyzer()
@@ -132,6 +156,12 @@ export default defineNuxtModule({
     moduleName: string,
     entities: EntityDefinition[]
   ): void {
+    // Create endpoint extractor to detect actions
+    const endpointExtractor = new EndpointExtractor(
+      this.rawSchema as any, // Use the raw schema stored during generation
+      moduleName
+    )
+    
     const config = {
       meta: {
         name: moduleName,
@@ -144,7 +174,16 @@ export default defineNuxtModule({
         audit: false,
         export: true
       },
+      ui: {
+        useModal: true,  // Set to false to use page navigation instead of modals
+        modalSize: 'lg'  // Options: 'sm', 'lg', 'xl'
+      },
       entities: entities.reduce((acc, entity) => {
+        // Detect available actions from OpenAPI schema
+        const availableActions = endpointExtractor.detectAvailableActions(entity.name)
+        const bulkActions = endpointExtractor.detectBulkActions(entity.name)
+        const customActions = endpointExtractor.getCustomActions(entity.name)
+        
         acc[entity.name.toLowerCase()] = {
           pagination: {
             default: 20,
@@ -157,8 +196,9 @@ export default defineNuxtModule({
             default: 'created_at',
             allowed: ['id', 'created_at', 'updated_at']
           },
-          actions: ['view', 'edit', 'delete'],
-          bulkActions: ['delete']
+          actions: availableActions,  // ✅ Auto-detected from OpenAPI
+          bulkActions: bulkActions,    // ✅ Auto-detected from OpenAPI
+          customActions: customActions.length > 0 ? customActions : undefined  // ✅ Custom actions if any
         }
         return acc
       }, {} as Record<string, any>)

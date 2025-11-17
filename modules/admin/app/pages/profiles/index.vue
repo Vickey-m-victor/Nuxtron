@@ -1,125 +1,391 @@
 <script setup lang="ts">
 import type { Profile } from '../../types/entities/profile.js'
+import type { ProfileCreatePayload } from '../../types/profile-dto.js'
+import Swal from 'sweetalert2'
+import { useModalStore } from '~/stores/modal'
+import ProfileForm from '../../components/ProfileForm.vue'
+import moduleConfig from '../../../module.config'
 
 definePageMeta({
   layout: 'default'
 })
 
-const route = useRoute()
 const router = useRouter()
 const { $api } = useNuxtApp()
+const { showToast, showAlert, handleAlertify } = useAlertify()
+const modalStore = useModalStore()
 
-const { data, pending, error, refresh} = await useFetch<{
-  dataPayload: {
-    data: Profile[]
-    totalCount: number
-    currentPage: number
+// Get modal settings from module config
+const useModalMode = moduleConfig.ui?.useModal ?? true
+const modalSize = moduleConfig.ui?.modalSize ?? 'lg'
+
+// Pagination state
+const currentPage = ref(1)
+const perPage = ref(20)
+const searchQuery = ref('')
+
+// Fetch function with query parameters
+const fetchItems = () => {
+  const params = new URLSearchParams({
+    page: currentPage.value.toString(),
+    'per-page': perPage.value.toString()
+  })
+
+  if (searchQuery.value) {
+    params.append('_search', searchQuery.value)
   }
-}>(`/api/v1/admin/profiles`, {
-  query: route.query,
-  watch: [() => route.query],
-  $fetch: $api
-})
 
-const profiles = computed(() => data.value?.dataPayload?.data || [])
-
-const handleView = (id: number) => {
-  router.push(`/admin/profiles/${id}`)
+  return `/api/v1/admin/profiles?${params.toString()}`
 }
 
-const handleEdit = (id: number) => {
-  router.push(`/admin/profiles/${id}/edit`)
+const { data, pending, error, refresh } = await useAsyncData(
+  'profile-list',
+  () => $api(fetchItems()),
+  {
+    watch: [currentPage, perPage, searchQuery]
+  }
+)
+
+const items = computed(() => data.value?.dataPayload?.data || [])
+const errors = ref<Record<string, string>>({})
+
+// Pagination data for DataGrid
+const paginationData = computed(() => ({
+  currentPage: data.value?.dataPayload?.currentPage || 1,
+  perPage: data.value?.dataPayload?.perPage || 20,
+  totalCount: data.value?.dataPayload?.totalCount || 0,
+  totalPages: data.value?.dataPayload?.totalPages || 1,
+  countOnPage: data.value?.dataPayload?.countOnPage || 0
+}))
+
+// Pagination event handlers
+const handleChangePage = (page: number) => {
+  currentPage.value = page
 }
 
-const handleDelete = async (id: number) => {
-  if (confirm('Are you sure you want to delete this item?')) {
+const handleUpdatePerPage = (newPerPage: number) => {
+  perPage.value = newPerPage
+  currentPage.value = 1 // Reset to first page
+}
+
+const handleSearch = (query: string) => {
+  searchQuery.value = query
+  currentPage.value = 1 // Reset to first page on search
+}
+
+const columns = [
+  {
+    "field": "first_name",
+    "header": "First Name"
+  },
+  {
+    "field": "middle_name",
+    "header": "Middle Name"
+  },
+  {
+    "field": "last_name",
+    "header": "Last Name"
+  },
+  {
+    "field": "email_address",
+    "header": "Email Address"
+  },
+  {
+    "field": "phone_number",
+    "header": "Phone Number"
+  },
+  {
+    "field": "profile_picture",
+    "header": "Profile Picture"
+  },
+  {
+    "field": "status",
+    "header": "Status"
+  }
+]
+
+// ========== CREATE HANDLER ==========
+const onCreate = async () => {
+  errors.value = {}
+  
+  // Use modal setting from module config
+  modalStore.toggleModalUsage(useModalMode)
+  await nextTick()
+
+  if (!modalStore.useModal) {
+    // Navigate to create page
+    router.push(`/admin/profiles/create`)
+    return
+  }
+
+  // Modal mode: Define submit handler
+  const handleSubmit = async (newData: ProfileCreatePayload) => {
     try {
-      await $api(`/api/v1/admin/profile/${id}`, {
+      const response = await $api(`/api/v1/admin/profile`, {
+        method: 'POST',
+        body: newData
+      })
+
+      // Check for errorPayload in response (API returns 200 but with errors)
+      if (response?.errorPayload?.errors) {
+        errors.value = response.errorPayload.errors
+        
+        // Handle alertify for errors if present
+        if (response.alertifyPayload) {
+          handleAlertify(response.alertifyPayload)
+        }
+        
+        throw new Error('Validation failed') // Throw to let form handle it
+      }
+
+      // Handle backend notifications
+      if (response?.alertifyPayload) {
+        handleAlertify(response.alertifyPayload)
+      } else {
+        showToast('Profile created successfully', 'success')
+      }
+
+      // Close modal and refresh
+      modalStore.closeModal()
+      await refresh()
+    } catch (err: any) {
+      // Extract field errors
+      if (err.data?.errorPayload?.errors) {
+        errors.value = err.data.errorPayload.errors
+      } else if (err.data?.data?.errorPayload?.errors) {
+        errors.value = err.data.data.errorPayload.errors
+      }
+      
+      // Handle error notifications
+      if (err?.data?.alertifyPayload) {
+        handleAlertify(err.data.alertifyPayload)
+      }
+      
+      console.error('Create failed:', err)
+      throw err // Re-throw to let form handle it
+    }
+  }
+
+  // Open modal with form
+  modalStore.openModal(
+    ProfileForm,
+    {
+      formData: {
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        email_address: '',
+        phone_number: '',
+        profile_picture: '',
+        status: undefined
+      },
+      error: {},
+      fieldErrors: errors,
+      isLoading: false,
+      readonly: false,
+      hideSubmit: false,
+      compact: true,
+      onSubmit: handleSubmit
+    },
+    'Create Profile',
+    modalSize
+  )
+}
+
+// ========== VIEW HANDLER ==========
+const onView = async (row: Profile) => {
+  const id = row.id
+  
+  // Use modal setting from module config
+  modalStore.toggleModalUsage(useModalMode)
+  await nextTick()
+
+  if (!modalStore.useModal) {
+    // Navigate to view page
+    router.push(`/admin/profiles/${id}`)
+    return
+  }
+
+  // Modal mode: fetch data and show in modal
+  try {
+    const response = await $api(`/api/v1/admin/profile/${id}`)
+    const viewData = response?.dataPayload?.data || {}
+    
+    modalStore.openModal(
+      ProfileForm,
+      {
+        formData: viewData,
+        error: {},
+        fieldErrors: {},
+        isLoading: false,
+        readonly: true, // View mode: all fields disabled
+        hideSubmit: true, // Hide submit button
+        compact: true
+      },
+      'View Profile',
+      modalSize
+    )
+  } catch (err: any) {
+    console.error('Failed to load profile:', err)
+    showToast('Failed to load profile', 'error')
+  }
+}
+
+// ========== EDIT HANDLER ==========
+const onEdit = async (row: Profile) => {
+  const id = row.id
+  errors.value = {}
+  
+  // Use modal setting from module config
+  modalStore.toggleModalUsage(useModalMode)
+  await nextTick()
+
+  if (!modalStore.useModal) {
+    // Navigate to edit page
+    router.push(`/admin/profiles/${id}/edit`)
+    return
+  }
+
+  // Fetch data first
+  try {
+    const response = await $api(`/api/v1/admin/profile/${id}`)
+    const editData = response?.dataPayload?.data || {}
+    
+    // Define submit handler
+    const handleSubmit = async (updatedData: Profile) => {
+      try {
+        const response = await $api(`/api/v1/admin/profile/${id}`, {
+          method: 'PUT',
+          body: updatedData
+        })
+
+        // Check for errorPayload in response (API returns 200 but with errors)
+        if (response?.errorPayload?.errors) {
+          errors.value = response.errorPayload.errors
+          
+          // Handle alertify for errors if present
+          if (response.alertifyPayload) {
+            handleAlertify(response.alertifyPayload)
+          }
+          
+          throw new Error('Validation failed') // Throw to let form handle it
+        }
+
+        if (response?.alertifyPayload) {
+          handleAlertify(response.alertifyPayload)
+        } else {
+          showToast('Profile updated successfully', 'success')
+        }
+
+        modalStore.closeModal()
+        await refresh()
+      } catch (err: any) {
+        if (err.data?.errorPayload?.errors) {
+          errors.value = err.data.errorPayload.errors
+        } else if (err.data?.data?.errorPayload?.errors) {
+          errors.value = err.data.data.errorPayload.errors
+        }
+        
+        if (err?.data?.alertifyPayload) {
+          handleAlertify(err.data.alertifyPayload)
+        }
+        
+        console.error('Update failed:', err)
+        throw err
+      }
+    }
+
+    // Open modal
+    modalStore.openModal(
+      ProfileForm,
+      {
+        formData: editData,
+        error: {},
+        fieldErrors: errors,
+        isLoading: false,
+        readonly: false,
+        hideSubmit: false,
+        compact: true,
+        onSubmit: handleSubmit
+      },
+      'Edit Profile',
+      modalSize
+    )
+  } catch (err: any) {
+    console.error('Failed to load profile:', err)
+    showToast('Failed to load profile', 'error')
+  }
+}
+
+const onDelete = async (row: Profile) => {
+  // Use SweetAlert2 for confirmation instead of native confirm
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: 'This action cannot be undone!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#d63939',
+    cancelButtonColor: '#6c757d',
+    customClass: {
+      confirmButton: 'btn btn-danger',
+      cancelButton: 'btn btn-secondary'
+    },
+    buttonsStyling: false
+  })
+
+  if (result.isConfirmed) {
+    try {
+      const response = await $api(`/api/v1/admin/profile/${row.id}`, {
         method: 'DELETE'
       })
+      
+      // Handle backend alertifyPayload if present
+      if (response?.alertifyPayload) {
+        const { handleAlertify } = useAlertify()
+        handleAlertify(response.alertifyPayload)
+      } else {
+        showToast('Deleted successfully', 'success')
+      }
+      
       await refresh()
-    } catch (err) {
-      console.error('Delete failed:', err)
+    } catch (err: any) {
+      // Handle error alertifyPayload from backend
+      if (err?.data?.alertifyPayload) {
+        const { handleAlertify } = useAlertify()
+        handleAlertify(err.data.alertifyPayload)
+      } else {
+        showAlert(err?.data?.message || 'Delete failed', 'error')
+      }
     }
   }
 }
 </script>
 
 <template>
-  <div>
-    <BasePageHeading :title="'Profile List'">
-      <template #extra>
-        <NuxtLink 
-          :to="`/admin/profiles/create`"
-          class="btn btn-primary"
-        >
-          <i class="fa fa-plus me-1"></i>
-          Create New
-        </NuxtLink>
-      </template>
-    </BasePageHeading>
+  <div class="content">
+    <BasePageHeading :title="'Profile List'" />
 
     <BaseBlock>
-      <div v-if="pending" class="text-center py-4">
-        <div class="spinner-border" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-      </div>
-
-      <div v-else-if="error" class="alert alert-danger">
-        Error loading data: {{ error.message }}
-      </div>
-
-      <div v-else-if="profiles.length === 0" class="text-center py-4">
-        <p class="text-muted">No items found</p>
-      </div>
-
-      <div v-else class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th>First Name</th>
-              <th>Middle Name</th>
-              <th>Last Name</th>
-              <th>Email Address</th>
-              <th>Phone Number</th>
-              <th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in profiles" :key="item.id">
-              <td>{{ item.first_name }}</td>
-              <td>{{ item.middle_name }}</td>
-              <td>{{ item.last_name }}</td>
-              <td>{{ item.email_address }}</td>
-              <td>{{ item.phone_number }}</td>
-              <td class="text-end">
-                <button
-                  @click="handleView(item.id)"
-                  class="btn btn-sm btn-info me-1"
-                  title="View"
-                >
-                  <i class="fa fa-eye"></i>
-                </button>
-                <button
-                  @click="handleEdit(item.id)"
-                  class="btn btn-sm btn-warning me-1"
-                  title="Edit"
-                >
-                  <i class="fa fa-pencil"></i>
-                </button>
-                <button
-                  @click="handleDelete(item.id)"
-                  class="btn btn-sm btn-danger"
-                  title="Delete"
-                >
-                  <i class="fa fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <DataGrid
+        :data="items"
+        :columns="columns"
+        :loading="pending"
+        :pagination-data="paginationData"
+        :search-in-backend="true"
+        :actions="['view', 'edit', 'delete']"
+        row-key="id"
+        create-label="Create Profile"
+        :empty-message="'No profile found'"
+        @create="onCreate"
+        @view="onView"
+        @edit="onEdit"
+        @delete="onDelete"
+        @change-page="handleChangePage"
+        @update:per-page="handleUpdatePerPage"
+        @search="handleSearch"
+      />
     </BaseBlock>
   </div>
 </template>
